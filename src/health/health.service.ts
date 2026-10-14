@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
+import type { HealthStatus } from './health.types';
+
 @Injectable()
 export class HealthService {
-  getHealth() {
+  getHealth(): HealthStatus {
     return {
       status: 'ok',
       service: 'TED Education API',
