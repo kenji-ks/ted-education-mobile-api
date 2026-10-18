@@ -1,4 +1,3 @@
-
 {
   "name": "ted-education-mobile-api",
   "version": "0.0.1",
@@ -37,7 +36,7 @@
     "@nestjs/throttler": "^6.7.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
-    "expo": "~57.0.28",
+    "expo": "~57.0.30",
     "helmet": "^8.3.0",
     "react": "19.2.3",
     "react-native": "0.86.3",
