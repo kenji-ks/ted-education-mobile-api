@@ -29,7 +29,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    let payload: { sub?: string };
+    let payload: { sub?: string; purpose?: string; sv?: number };
 
     try {
       payload = await this.jwt.verifyAsync(token, {
@@ -39,6 +39,10 @@ export class JwtAuthGuard implements CanActivate {
       });
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    if (payload.purpose !== 'access' || typeof payload.sv !== 'number') {
+      throw new UnauthorizedException('Full authentication required.');
     }
 
     if (!payload.sub ||
@@ -55,14 +59,20 @@ export class JwtAuthGuard implements CanActivate {
         gender: true,
         role: true,
         isActive: true,
+        sessionVersion: true,
+        preferredLanguage: true,
+        fontScale: true,
+        highContrast: true,
+        onboardingStep: true,
+        onboardingCompletedAt: true,
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.sessionVersion !== payload.sv) {
       throw new UnauthorizedException();
     }
 
-    const { isActive, ...safeUser } = user;
+    const { isActive: _isActive, sessionVersion: _sessionVersion, ...safeUser } = user;
     req.user = safeUser;
     return true;
   }

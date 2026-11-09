@@ -1,4 +1,4 @@
-import { JWT_ACCESS_SECONDS } from './jwt.config';
+
 import {
   BadRequestException,
   ConflictException,
@@ -12,12 +12,15 @@ import { UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { MfaService } from './mfa.service';
+import { UpdateAccountDto } from './dto/update-account.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly mfa: MfaService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -27,20 +30,12 @@ export class AuthService {
       where: { email },
     });
 
-    if (!user || !user.isActive ||
+    if (!user || !user.isActive || !user.passwordHash ||
         !(await compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    const accessToken = await this.jwt.signAsync({
-      sub: user.id,
-    });
-
-    return {
-      accessToken,
-      tokenType: 'Bearer',
-      expiresIn: JWT_ACCESS_SECONDS,
-    };
+    return this.mfa.loginResult(user);
   }
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
@@ -93,5 +88,43 @@ export class AuthService {
 
       throw error;
     }
+  }
+
+  async updateAccount(userId: string, dto: UpdateAccountDto) {
+    const values: Prisma.UserUpdateInput = {};
+
+    if (dto.fullName !== undefined) {
+      const name = dto.fullName.trim().replace(/\s+/g,' ');
+      if (name.length < 2) {
+        throw new BadRequestException('Name must contain at least 2 characters.');
+      }
+      values.fullName = name;
+    }
+
+    if (dto.gender !== undefined) values.gender = dto.gender;
+    if (dto.preferredLanguage !== undefined)
+      values.preferredLanguage = dto.preferredLanguage;
+    if (dto.fontScale !== undefined)
+      values.fontScale = dto.fontScale;
+    if (dto.highContrast !== undefined)
+      values.highContrast = dto.highContrast;
+    if (dto.onboardingStep !== undefined)
+      values.onboardingStep = dto.onboardingStep;
+
+    if (dto.completeOnboarding === true) {
+      values.onboardingStep = 3;
+      values.onboardingCompletedAt = new Date();
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: values,
+      select: {
+        id: true, email: true, fullName: true, gender: true,
+        role: true, preferredLanguage: true, fontScale: true,
+        highContrast: true, onboardingStep: true,
+        onboardingCompletedAt: true
+      }
+    });
   }
 }
