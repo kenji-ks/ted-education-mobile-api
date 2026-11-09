@@ -7,6 +7,7 @@ import {
   ThrottlerModule,
 } from '@nestjs/throttler';
 
+import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { createRateLimitConfig } from './common/config/rate-limit.config';
@@ -42,6 +43,7 @@ import { TreatmentsModule } from './treatments/treatments.module';
       }),
     }),
 
+    AuthModule,
     HealthModule,
     EducationModule,
     TreatmentsModule,
