@@ -1,11 +1,12 @@
 
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { Test } from '@nestjs/testing';
 import {
   ThrottlerGuard,
   ThrottlerModule,
 } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import {
   afterAll,
@@ -46,12 +47,21 @@ async function createTestApp(
 
   const moduleRef = await Test.createTestingModule({
     imports: [
+      // API-009: Register ConfigModule so configureSecurity()
+      // can retrieve ConfigService from the NestJS container.
+      // Do not load real credentials from .env.local in tests.
+      ConfigModule.forRoot({
+        isGlobal: true,
+        ignoreEnvFile: true,
+      }),
+
       ThrottlerModule.forRoot([
         {
           ttl: 60000,
           limit,
         },
       ]),
+
       HealthModule,
       EducationModule,
       TreatmentsModule,

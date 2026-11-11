@@ -1,4 +1,5 @@
 
+import { ConfigService } from '@nestjs/config';
 import {
   afterEach,
   describe,
@@ -8,6 +9,8 @@ import {
 } from 'vitest';
 
 import { createCorsConfig } from './cors.config';
+
+const configService = new ConfigService();
 
 describe('API-007 CORS Configuration (unit)', () => {
   afterEach(() => {
@@ -20,7 +23,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       'https://app.example.com,https://admin.example.com',
     );
 
-    expect(createCorsConfig().origin).toEqual([
+    expect(createCorsConfig(configService).origin).toEqual([
       'https://app.example.com',
       'https://admin.example.com',
     ]);
@@ -32,7 +35,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       '  https://app.example.com , https://admin.example.com  ',
     );
 
-    expect(createCorsConfig().origin).toEqual([
+    expect(createCorsConfig(configService).origin).toEqual([
       'https://app.example.com',
       'https://admin.example.com',
     ]);
@@ -44,7 +47,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       ',https://app.example.com,, ,https://admin.example.com,',
     );
 
-    expect(createCorsConfig().origin).toEqual([
+    expect(createCorsConfig(configService).origin).toEqual([
       'https://app.example.com',
       'https://admin.example.com',
     ]);
@@ -54,7 +57,7 @@ describe('API-007 CORS Configuration (unit)', () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('CORS_ORIGINS', undefined);
 
-    expect(createCorsConfig().origin).toEqual([
+    expect(createCorsConfig(configService).origin).toEqual([
       'http://localhost:8081',
       'http://localhost:19006',
     ]);
@@ -64,33 +67,33 @@ describe('API-007 CORS Configuration (unit)', () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('CORS_ORIGINS', undefined);
 
-    expect(createCorsConfig().origin).toEqual([]);
+    expect(createCorsConfig(configService).origin).toEqual([]);
   });
 
   it('does not allow wildcard origins by default', () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('CORS_ORIGINS', undefined);
 
-    const config = createCorsConfig();
+    const config = createCorsConfig(configService);
 
     expect(config.origin).not.toBe('*');
     expect(config.origin).toEqual([]);
   });
 
   it('does not enable credentialed CORS requests', () => {
-    const config = createCorsConfig();
+    const config = createCorsConfig(configService);
 
     expect(config.credentials).toBe(false);
   });
 
   it('exposes X-Request-ID to browser clients', () => {
-    const config = createCorsConfig();
+    const config = createCorsConfig(configService);
 
     expect(config.exposedHeaders).toContain('X-Request-ID');
   });
 
   it('allows expected HTTP methods', () => {
-    const config = createCorsConfig();
+    const config = createCorsConfig(configService);
 
     expect(config.methods).toEqual([
       'GET',
@@ -103,7 +106,7 @@ describe('API-007 CORS Configuration (unit)', () => {
   });
 
   it('restricts allowed request headers', () => {
-    const config = createCorsConfig();
+    const config = createCorsConfig(configService);
 
     expect(config.allowedHeaders).toEqual([
       'Content-Type',
@@ -116,13 +119,13 @@ describe('API-007 CORS Configuration (unit)', () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('CORS_ORIGINS', '');
 
-    expect(createCorsConfig().origin).toEqual([]);
+    expect(createCorsConfig(configService).origin).toEqual([]);
   });
 
   it('rejects wildcard origins', () => {
     vi.stubEnv('CORS_ORIGINS', '*');
 
-    expect(() => createCorsConfig()).toThrow(
+    expect(() => createCorsConfig(configService)).toThrow(
       'Wildcard and null origins are not allowed.',
     );
   });
@@ -130,7 +133,7 @@ describe('API-007 CORS Configuration (unit)', () => {
   it('rejects null origins', () => {
     vi.stubEnv('CORS_ORIGINS', 'null');
 
-    expect(() => createCorsConfig()).toThrow(
+    expect(() => createCorsConfig(configService)).toThrow(
       'Wildcard and null origins are not allowed.',
     );
   });
@@ -138,7 +141,7 @@ describe('API-007 CORS Configuration (unit)', () => {
   it('rejects invalid origin URLs', () => {
     vi.stubEnv('CORS_ORIGINS', 'not-a-valid-origin');
 
-    expect(() => createCorsConfig()).toThrow(
+    expect(() => createCorsConfig(configService)).toThrow(
       'Invalid CORS origin',
     );
   });
@@ -149,7 +152,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       'https://app.example.com/dashboard',
     );
 
-    expect(() => createCorsConfig()).toThrow(
+    expect(() => createCorsConfig(configService)).toThrow(
       'Invalid CORS origin',
     );
   });
@@ -161,7 +164,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       'http://app.example.com',
     );
 
-    expect(() => createCorsConfig()).toThrow(
+    expect(() => createCorsConfig(configService)).toThrow(
       'Production CORS origin must use HTTPS',
     );
   });
@@ -173,7 +176,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       'https://app.example.com',
     );
 
-    expect(createCorsConfig().origin).toEqual([
+    expect(createCorsConfig(configService).origin).toEqual([
       'https://app.example.com',
     ]);
   });
@@ -184,7 +187,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       'https://app.example.com,https://app.example.com',
     );
 
-    expect(createCorsConfig().origin).toEqual([
+    expect(createCorsConfig(configService).origin).toEqual([
       'https://app.example.com',
     ]);
   });
@@ -195,7 +198,7 @@ describe('API-007 CORS Configuration (unit)', () => {
       'https://app.example.com,*',
     );
 
-    expect(() => createCorsConfig()).toThrow(
+    expect(() => createCorsConfig(configService)).toThrow(
       'Wildcard and null origins are not allowed.',
     );
   });

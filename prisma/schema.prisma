@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  PREFER_NOT_TO_SAY
+}
+
+model User {
+  id              String          @id @default(uuid()) @db.Uuid
+  email           String          @unique @db.VarChar(254)
+  fullName        String          @db.VarChar(120)
+  passwordHash    String?
+  socialAccounts  SocialAccount[]
+  mfaSetting      MfaSetting?
+  sessionVersion  Int             @default(0)
+  preferredLanguage String          @default("en") @db.VarChar(8)
+  fontScale       Float             @default(1)
+  highContrast    Boolean           @default(false)
+  onboardingStep  Int               @default(0)
+  onboardingCompletedAt DateTime?
+  passwordResetCode PasswordResetCode?
+  gender          Gender?
+  role            Role            @default(PATIENT)
+  avatarUrl       String?
+  isActive        Boolean         @default(true)
+  emailVerifiedAt DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+enum AuthProvider {
+  GOOGLE
+  FACEBOOK
+  APPLE
+}
+
+model SocialAccount {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @db.Uuid
+  provider       AuthProvider
+  providerUserId String       @db.VarChar(255)
+  createdAt      DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+}
+
+model PasswordResetCode {
+  userId String @id @db.Uuid
+  codeHash String @db.VarChar(64)
+  attempts Int @default(0)
+  sentAt DateTime @default(now())
+  expiresAt DateTime
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MfaSetting {
+  userId          String   @id @db.Uuid
+  secretCipher    String?  @db.Text
+  pendingCipher   String?  @db.Text
+  pendingAt       DateTime?
+  enabledAt       DateTime?
+  recoveryHashes  String[] @default([])
+  lastUsedStep    Int      @default(-1)
+  attempts        Int      @default(0)
+  lockedUntil     DateTime?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

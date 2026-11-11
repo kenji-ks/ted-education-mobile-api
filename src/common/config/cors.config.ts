@@ -1,4 +1,5 @@
 
+import type { ConfigService } from '@nestjs/config';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 const DEVELOPMENT_ORIGINS = [
@@ -32,8 +33,6 @@ function parseAllowedOrigins(
       throw new Error(`Invalid CORS origin: "${origin}".`);
     }
 
-    // CORS_ORIGINS must contain exact origins, not full URLs
-    // with paths, queries, fragments, or credentials.
     if (
       !['http:', 'https:'].includes(url.protocol) ||
       url.origin !== origin ||
@@ -55,9 +54,20 @@ function parseAllowedOrigins(
   return [...uniqueOrigins];
 }
 
-export function createCorsConfig(): CorsOptions {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const configuredOrigins = process.env.CORS_ORIGINS;
+/**
+ * Creates a CORS configuration using NestJS ConfigService.
+ *
+ * Development allows the known local Expo web origins.
+ * Production denies all browser origins by default.
+ */
+export function createCorsConfig(
+  config: ConfigService,
+): CorsOptions {
+  const isProduction =
+    config.get<string>('NODE_ENV') === 'production';
+
+  const configuredOrigins =
+    config.get<string>('CORS_ORIGINS');
 
   const allowedOrigins =
     configuredOrigins === undefined

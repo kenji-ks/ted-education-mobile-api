@@ -1,3 +1,5 @@
+
+import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 
@@ -27,11 +29,15 @@ export function configureSecurity(
   // Preserve validation and standardized error handling.
   configureHttp(app);
 
+  // Access environment configuration through NestJS.
+  const config = app.get(ConfigService);
+
   // Restrict browser origins using the configured allowlist.
-  app.enableCors(createCorsConfig());
+  app.enableCors(createCorsConfig(config));
 
   // Limit JSON and URL-encoded request bodies.
-  const bodyLimit = process.env.REQUEST_BODY_LIMIT ?? '100kb';
+  const bodyLimit =
+    config.get<string>('REQUEST_BODY_LIMIT') ?? '100kb';
 
   app.useBodyParser('json', {
     limit: bodyLimit,
